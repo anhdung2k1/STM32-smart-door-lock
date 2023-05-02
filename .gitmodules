@@ -1,0 +1,3 @@
+[submodule "certification-management"]
+	path = certification-management
+	url = git@github.com:anhdung2k1/certification-management.git
