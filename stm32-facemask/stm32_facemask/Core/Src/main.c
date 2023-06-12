@@ -21,15 +21,19 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "ILI9341_STM32_Driver.h"
-#include "ILI9341_GFX.h"
-#include "snow_tiger.h"
+#include "driver/lcdIli9341/ILI9341_STM32_Driver.h"
+#include "driver/lcdIli9341/ILI9341_GFX.h"
+#include "driver/ov7670/ov7670.h"
+#include "applicationSettings.h"
+#include "tft_spi.h"
+#include <stdio.h>
+#include "stm32f407xx.h"
+#include "assests/image_1.h"
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -44,11 +48,8 @@
 /* Private variables ---------------------------------------------------------*/
 DCMI_HandleTypeDef hdcmi;
 DMA_HandleTypeDef hdma_dcmi;
-
 I2C_HandleTypeDef hi2c2;
-
 RNG_HandleTypeDef hrng;
-
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 
@@ -69,7 +70,6 @@ static void MX_I2C2_Init(void);
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
-
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
@@ -109,347 +109,20 @@ int main(void)
   MX_DCMI_Init();
   MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-	ILI9341_Init();
-	ov7670_init(&hdcmi, &hdcmi, &hi2c2);
-	ov7670_config(OV7670_MODE_QVGA_RGB565);
-
+//  tft_init();
+  ILI9341_Init();
+  ov7670_init(&hdcmi, &hdma_dcmi, &hi2c2);
+  ov7670_config(OV7670_MODE_QVGA_RGB565);
+  ov7670_startCap(OV7670_MODE_QVGA_RGB565, s_destAddressForContiuousMode);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		static uint16_t x = 0;
-		static uint16_t y = 0;
-		static char BufferText[40];
-
     /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-
-		/* COUNTING MULTIPLE SEGMENTS */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Counting multiple segments at once", FONT2, 10, 10, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint16_t i = 0; i <= 10; i++)
-		{
-			sprintf(BufferText, "Counting: %d", i);
-			ILI9341_DrawText(BufferText, FONT3, 10, 10, BLACK, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 30, BLUE, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 50, RED, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 70, GREEN, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 90, BLACK, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 110, BLUE, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 130, RED, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 150, GREEN, WHITE);
-			ILI9341_DrawText(BufferText, FONT3, 10, 170, WHITE, BLACK);
-			ILI9341_DrawText(BufferText, FONT3, 10, 190, BLUE, BLACK);
-			ILI9341_DrawText(BufferText, FONT3, 10, 210, RED, BLACK);
-		}
-		HAL_Delay(1000);
-
-		/* COUNTING SINGLE SEGMENT */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Counting single segment", FONT3, 10, 10, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint16_t i = 0; i <= 100; i++)
-		{
-			sprintf(BufferText, "Counting: %d", i);
-			ILI9341_DrawText(BufferText, FONT4, 10, 10, BLACK, WHITE);
-			HAL_Delay(10);
-		}
-		HAL_Delay(1000);
-
-		/* ALIGNMENT TEST */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Rectangle alignment check", FONT3, 10, 10, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		ILI9341_DrawHollowRectangleCoord(50, 50, 100, 100, BLACK);
-		ILI9341_DrawFilledRectangleCoord(20, 20, 50, 50, BLACK);
-		ILI9341_DrawHollowRectangleCoord(10, 10, 19, 19, BLACK);
-		HAL_Delay(1000);
-
-		/* LINES EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Randomly placed and sized", FONT3, 10, 10, BLACK, WHITE);
-		ILI9341_DrawText("Horizontal and Vertical lines", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint32_t i = 0; i < 30000; i++)
-		{
-			uint32_t random_num = 0;
-			uint16_t xr = 0;
-			uint16_t yr = 0;
-			uint16_t radiusr = 0;
-			uint16_t colourr = 0;
-
-			/* Get random inputs */
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			xr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			yr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			radiusr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			colourr = random_num;
-
-			xr &= 0x01FF;
-			yr &= 0x01FF;
-			radiusr &= 0x001F;
-
-			ILI9341_DrawHLine(xr, yr, radiusr, colourr);
-			ILI9341_DrawVLine(xr, yr, radiusr, colourr);
-		}
-		HAL_Delay(1000);
-
-		/* HOLLOW CIRCLES EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Randomly placed and sized", FONT3, 10, 10, BLACK, WHITE);
-		ILI9341_DrawText("Circles", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint32_t i = 0; i < 3000; i++)
-		{
-			uint32_t random_num = 0;
-			uint16_t xr = 0;
-			uint16_t yr = 0;
-			uint16_t radiusr = 0;
-			uint16_t colourr = 0;
-
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			xr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			yr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			radiusr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			colourr = random_num;
-
-			xr &= 0x01FF;
-			yr &= 0x01FF;
-			radiusr &= 0x001F;
-
-			ILI9341_DrawHollowCircle(xr, yr, radiusr*2, colourr);
-		}
-		HAL_Delay(1000);
-
-		/* FILLED CIRCLES EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Randomly placed and sized", FONT3, 10, 10, BLACK,WHITE);
-		ILI9341_DrawText("Filled Circles", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint32_t i = 0; i < 1000; i++)
-		{
-			uint32_t random_num = 0;
-			uint16_t xr = 0;
-			uint16_t yr = 0;
-			uint16_t radiusr = 0;
-			uint16_t colourr = 0;
-
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			xr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			yr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			radiusr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			colourr = random_num;
-
-			xr &= 0x01FF;
-			yr &= 0x01FF;
-			radiusr &= 0x001F;
-
-			ILI9341_DrawFilledCircle(xr, yr, radiusr/2, colourr);
-		}
-		HAL_Delay(1000);
-
-		/* HOLLOW RECTANGLES EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Randomly placed and sized", FONT3, 10, 10, BLACK, WHITE);
-		ILI9341_DrawText("Rectangles", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint32_t i = 0; i < 20000; i++)
-		{
-			uint32_t random_num = 0;
-			uint16_t xr = 0;
-			uint16_t yr = 0;
-			uint16_t radiusr = 0;
-			uint16_t colourr = 0;
-
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			xr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			yr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			radiusr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			colourr = random_num;
-
-			xr &= 0x01FF;
-			yr &= 0x01FF;
-			radiusr &= 0x001F;
-
-			ILI9341_DrawHollowRectangleCoord(xr, yr, xr+radiusr, yr+radiusr, colourr);
-		}
-		HAL_Delay(1000);
-
-		/* FILLED RECTANGLES EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Randomly placed and sized", FONT3, 10, 10, BLACK, WHITE);
-		ILI9341_DrawText("Filled Rectangles", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint32_t i = 0; i < 20000; i++)
-		{
-			uint32_t random_num = 0;
-			uint16_t xr = 0;
-			uint16_t yr = 0;
-			uint16_t radiusr = 0;
-			uint16_t color = 0;
-
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			xr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			yr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			radiusr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			color = random_num;
-
-			xr &= 0x01FF;
-			yr &= 0x01FF;
-			radiusr &= 0x001F;
-
-			ILI9341_DrawRectangle(xr, yr, radiusr, radiusr, color);
-		}
-		HAL_Delay(1000);
-
-		/* INDIVIDUAL PIXEL EXAMPLE */
-
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Slow draw by selecting", FONT3, 10, 10, BLACK, WHITE);
-		ILI9341_DrawText("and adressing pixels", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		x = 0;
-		y = 0;
-
-		while (y < ILI9341_SCREEN_HEIGHT)
-		{
-			while ((x < ILI9341_SCREEN_WIDTH) && (y < ILI9341_SCREEN_HEIGHT))
-			{
-				if(x % 2)
-				{
-					ILI9341_DrawPixel(x, y, BLACK);
-				}
-				x++;
-			}
-			y++;
-			x = 0;
-		}
-
-		x = 0;
-		y = 0;
-
-		while (y < ILI9341_SCREEN_HEIGHT)
-		{
-			while ((x < ILI9341_SCREEN_WIDTH) && (y < ILI9341_SCREEN_HEIGHT))
-			{
-				if(y % 2)
-				{
-					ILI9341_DrawPixel(x, y, BLACK);
-				}
-				x++;
-			}
-			y++;
-			x = 0;
-		}
-		HAL_Delay(2000);
-
-		/* INDIVIDUAL PIXEL EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Random position and color", FONT3, 10, 10, BLACK, WHITE);
-		ILI9341_DrawText("500000 pixels", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_FillScreen(WHITE);
-
-		for(uint32_t i = 0; i < 500000; i++)
-		{
-			uint32_t random_num = 0;
-			uint16_t xr = 0;
-			uint16_t yr = 0;
-
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			xr = random_num;
-			random_num = HAL_RNG_GetRandomNumber(&hrng);
-			yr = random_num;
-			uint16_t color = HAL_RNG_GetRandomNumber(&hrng);
-
-			xr &= 0x01FF;
-			yr &= 0x01FF;
-
-			ILI9341_DrawPixel(xr, yr, color);
-		}
-		HAL_Delay(2000);
-
-		/* 565 GRAYSCALE EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("Color gradient", FONT3, 10, 10, BLACK, WHITE);
-		ILI9341_DrawText("Grayscale", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-
-		for(uint16_t i = 0; i <= ILI9341_SCREEN_WIDTH; i++)
-		{
-			uint16_t Red = 0;
-			uint16_t Green = 0;
-			uint16_t Blue = 0;
-
-			Red = i/(10);
-			Red <<= 11;
-			Green = i/(5);
-			Green <<= 5;
-			Blue = i/(10);
-
-			uint16_t RGB = Red + Green + Blue;
-			ILI9341_DrawRectangle(i, x, 1, 240, RGB);
-
-		}
-		HAL_Delay(2000);
-
-		/* IMAGE EXAMPLE */
-		ILI9341_FillScreen(WHITE);
-		ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
-		ILI9341_DrawText("RGB Picture", FONT3, 10, 10, RED, YELLOW);
-		ILI9341_DrawText("TIGER", FONT3, 10, 30, BLACK, WHITE);
-		HAL_Delay(2000);
-		ILI9341_DrawImage(snow_tiger, SCREEN_VERTICAL_2);
-		ILI9341_SetRotation(SCREEN_VERTICAL_1);
-		HAL_Delay(5000);
+		/* USER CODE BEGIN 3 */
 	}
   /* USER CODE END 3 */
 }
@@ -476,8 +149,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -689,6 +362,20 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

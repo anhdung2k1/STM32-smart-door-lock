@@ -30,8 +30,12 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rng.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h \
- ../Core/Inc/ILI9341_STM32_Driver.h ../Core/Inc/ILI9341_GFX.h \
- ../Core/Inc/fonts.h ../Core/Inc/snow_tiger.h
+ ../Core/Src/driver/lcdIli9341/ILI9341_STM32_Driver.h \
+ ../Core/Src/driver/lcdIli9341/ILI9341_GFX.h ../Core/Inc/fonts.h \
+ ../Core/Src/driver/ov7670/ov7670.h ../Core/Inc/common.h \
+ ../Core/Inc/applicationSettings.h ../Core/Inc/tft_spi.h \
+ ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h \
+ ../Core/Src/assests/image_1.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -64,7 +68,12 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rng.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h:
-../Core/Inc/ILI9341_STM32_Driver.h:
-../Core/Inc/ILI9341_GFX.h:
+../Core/Src/driver/lcdIli9341/ILI9341_STM32_Driver.h:
+../Core/Src/driver/lcdIli9341/ILI9341_GFX.h:
 ../Core/Inc/fonts.h:
-../Core/Inc/snow_tiger.h:
+../Core/Src/driver/ov7670/ov7670.h:
+../Core/Inc/common.h:
+../Core/Inc/applicationSettings.h:
+../Core/Inc/tft_spi.h:
+../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h:
+../Core/Src/assests/image_1.h:

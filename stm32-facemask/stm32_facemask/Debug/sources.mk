@@ -22,7 +22,11 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+Core/Inc \
+Core/Src/driver/lcdIli9341 \
+Core/Src/driver/ov7670 \
 Core/Src \
+Core/Src/hal \
 Drivers/STM32F4xx_HAL_Driver/Src \
 startup \
 

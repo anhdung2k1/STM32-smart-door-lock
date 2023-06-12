@@ -28,8 +28,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "common.h"
-#include "ov7670.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -66,6 +65,35 @@ void Error_Handler(void);
 #define LCD_RST_GPIO_Port GPIOC
 #define CAMERA_RESET_Pin GPIO_PIN_5
 #define CAMERA_RESET_GPIO_Port GPIOC
+#define SCL_Pin   GPIO_PIN_10
+#define SCL_GPIO_Port GPIOB
+#define SDA_Pin  GPIO_PIN_11
+#define SDA_GPIO_Port GPIOB
+#define VS_Pin    GPIO_PIN_7
+#define VS_GPIO_Port GPIOB
+#define HS_Pin   GPIO_PIN_4
+#define HS_GPIO_PORT GPIOA
+#define PCLK_Pin  GPIO_PIN_6
+#define PCLK_GPIO_Port GPIOA
+#define XCLK_Pin  GPIO_PIN_8
+#define XCLK_GPIO_Port GPIOA
+#define D0_Pin    GPIO_PIN_6
+#define D0_GPIO_Port GPIOC
+#define D1_Pin    GPIO_PIN_7
+#define D1_GPIO_Port GPIOC
+#define D2_Pin    GPIO_PIN_8
+#define D2_GPIO_Port GPIOC
+#define D3_Pin    GPIO_PIN_9
+#define D3_GPIO_Port GPIOC
+#define D4_Pin    GPIO_PIN_11
+#define D4_GPIO_Port GPIOC
+#define D5_Pin    GPIO_PIN_6
+#define D5_GPIO_Port GPIOB
+#define D6_Pin    GPIO_PIN_8
+#define D6_GPIO_Port GPIOB
+#define D7_Pin    GPIO_PIN_9
+#define D7_GPIO_Port GPIOB
+#define ILI9341_SPI SPI1
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

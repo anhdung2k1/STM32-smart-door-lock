@@ -1,0 +1,5 @@
+../Core/Src/hal/camera.c:11:5:camera_init	8	static
+../Core/Src/hal/camera.c:16:5:camera_config	24	static
+../Core/Src/hal/camera.c:33:5:camera_startCap	24	static
+../Core/Src/hal/camera.c:51:5:camera_stopCap	8	static
+../Core/Src/hal/camera.c:56:6:camera_registerCallback	16	static
