@@ -1,5 +1,0 @@
-camera.c:11:5:camera_init	1
-camera.c:16:5:camera_config	3
-camera.c:33:5:camera_startCap	3
-camera.c:51:5:camera_stopCap	1
-camera.c:56:6:camera_registerCallback	1
