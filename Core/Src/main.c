@@ -52,20 +52,17 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-   uint8_t FPHeader[6]={0xEF,0x01,0xFF,0xFF,0xFF,0xFF};
-	 uint8_t FPGetImage[6]={0x01,0x00,0x03,0x01,0x00,0x05};
-	 uint8_t FPCreateCharFile1[7]={0x01,0x00,0x04,0x02,0x01,0x00,0x08};
-	 uint8_t FPCreateCharFile2[7]={0x01,0x00,0x04,0x02,0x02,0x00,0x09};
-	 uint8_t FPCreateTemplate[6]={0x01,0x00,0x03,0x05,0x00,0x09};
-	 uint8_t FPDeleteAllFinger[6]={0x01,0x00,0x03,0x0D,0x00,0x11};
-   uint8_t FPSearchFinger[11]={0x01,0x00,0x08,0x04,0x01,0x00,0x00,0x00,0x40,0x00,0x4E};
-	 uint8_t FPGetNumberOfFinger[6]={0x01,0x00,0x03,0x1D,0x00,0x21};
-	
-	 
-   uint8_t IDFromFinger;
-	 
-	 
-	 uint8_t CurrentNumberFinger;
+uint8_t FPHeader[6]={0xEF,0x01,0xFF,0xFF,0xFF,0xFF};
+uint8_t FPGetImage[6]={0x01,0x00,0x03,0x01,0x00,0x05};
+uint8_t FPCreateCharFile1[7]={0x01,0x00,0x04,0x02,0x01,0x00,0x08};
+uint8_t FPCreateCharFile2[7]={0x01,0x00,0x04,0x02,0x02,0x00,0x09};
+uint8_t FPCreateTemplate[6]={0x01,0x00,0x03,0x05,0x00,0x09};
+uint8_t FPDeleteAllFinger[6]={0x01,0x00,0x03,0x0D,0x00,0x11};
+uint8_t FPSearchFinger[11]={0x01,0x00,0x08,0x04,0x01,0x00,0x00,0x00,0x40,0x00,0x4E};
+uint8_t FPGetNumberOfFinger[6]={0x01,0x00,0x03,0x1D,0x00,0x21};
+
+uint8_t IDFromFinger;
+uint8_t CurrentNumberFinger;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,7 +77,7 @@ static void MX_UART5_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-	 
+
 
 void SendFPHeader()
 {
@@ -126,7 +123,7 @@ void SendStoreFinger(uint16_t IDStore)
 {
 	uint16_t Sum=0;
 	uint8_t DataSend[9]={0};
-	
+
 	DataSend[0]=0x01;
 	Sum=Sum+DataSend[0];
 	DataSend[1]=0x00;
@@ -150,7 +147,7 @@ void SendDeleteFinger(uint16_t IDDelete)
 {
 	uint16_t Sum=0;
 	uint8_t DataSend[10]={0};
-	
+
 	DataSend[0]=0x01;
 	Sum=Sum+DataSend[0];
 	DataSend[1]=0x00;
@@ -191,7 +188,7 @@ uint8_t CheckFPRespsone(uint8_t MaxRead)
 				ByteCount++;
 			}
 	}
-	
+
 	if(ByteCount==0)
 	{
 		//FPRXData[0]=0xEE;
@@ -207,12 +204,12 @@ uint8_t CheckFPRespsone(uint8_t MaxRead)
 	}
 	  else // vail data return
 	{
-		 
+
 		 Result=FPRXData[9];
 		 IDFromFinger=FPRXData[11];
 	   //HAL_UART_Transmit(&huart2,FPRXData,MaxRead,1000);
 		 return Result;
-		 
+
 	}
 }
 
@@ -223,7 +220,7 @@ uint8_t GetNumberOfFinger()
 	SendFGetNumberOfFinger();
 	Result=CheckFPRespsone(14);
 	if(Result!=FP_OK) return 0xFF;
-	
+
 	return IDFromFinger;
 }
 
@@ -233,17 +230,17 @@ uint8_t GetNumberOfFinger()
 
 uint8_t RegistryNewFinger(uint16_t LocationID)
 {
-	
+
 	uint8_t Result=FP_NOFINGER;
 	uint32_t TimeOut = HAL_GetTick();
-	
+
 
 	LCD_SetPos(0,1);
 	LCD_String("HAY DAT NGON TAY");
-	
+
 	while(Result==FP_NOFINGER&&(HAL_GetTick() - TimeOut < 5000)) // time out is 5000 ms
 	{
-		
+
 		SendFPHeader();
 		SendFPGetImage();
 		Result=CheckFPRespsone(12);
@@ -254,66 +251,66 @@ uint8_t RegistryNewFinger(uint16_t LocationID)
 	SendFPCreateCharFile1();
 	Result=CheckFPRespsone(12);
 	if(Result!=FP_OK) return FP_ERROR;
-	
+
 	LCD_SetPos(0,1);
 	LCD_String(" HAY BO TAY RA  ");
-	
+
 	HAL_Delay(2000);
 	Result=FP_NOFINGER;
 	TimeOut = HAL_GetTick();
 	LCD_SetPos(0,1);
 	LCD_String("DAT LAI NGON TAY");
-	
+
 	while(Result==FP_NOFINGER&&(HAL_GetTick() - TimeOut < 5000)) // time out is 5000 ms
 	{
-		
+
 		SendFPHeader();
 		SendFPGetImage();
 		Result=CheckFPRespsone(12);
 	}
 	if(Result!=FP_OK) return FP_ERROR;
-	
+
 	// continue if detect finger;
 	SendFPHeader();
 	SendFPCreateCharFile2();
 	Result=CheckFPRespsone(12);
 	if(Result!=FP_OK) return FP_ERROR;
-	
+
 	// Compare finger, create template
 	SendFPHeader();
 	SendFPCreateTemplate();
 	Result=CheckFPRespsone(12);
-	if(Result==FP_FINGER_NOTMATCH) 
+	if(Result==FP_FINGER_NOTMATCH)
 	{
-		
+
 		return FP_FINGER_NOTMATCH;
 	}
 	else if(Result!=FP_OK) return FP_ERROR;
-	
+
 	// save finger
 	SendFPHeader();
 	SendStoreFinger(LocationID);
 	Result=CheckFPRespsone(12);
 	if(Result!=FP_OK) return FP_ERROR;
-	else 
+	else
 	{
 		return FP_OK;
 	}
-	
+
 }
 
 uint8_t CheckFinger()
 {
 	uint8_t Result=FP_NOFINGER;
 	uint32_t TimeOut = HAL_GetTick();
-	
-	
 
-	
-	
+
+
+
+
 	while(Result==FP_NOFINGER&&(HAL_GetTick() - TimeOut < 5000)&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==0) // time out is 5000 ms and no button press
 	{
-		
+
 		SendFPHeader();
 		SendFPGetImage();
 		Result=CheckFPRespsone(12);
@@ -329,14 +326,14 @@ uint8_t CheckFinger()
 	SendFPCreateCharFile1();
 	Result=CheckFPRespsone(12);
 	if(Result!=FP_OK) return FP_ERROR;
-	
+
 	// Search Fingger
 	SendFPHeader();
 	SendFPDSearchFinger();
 	Result=CheckFPRespsone(16);
 	return Result;
-	
-	
+
+
 }
 
 
@@ -344,14 +341,14 @@ uint8_t ProcessRegistryNewFinger()
 {
   uint8_t FingerResult;
   LCD_SetPos(0,1);
-	LCD_String("DANG KY VAN TAY ");
-	
-	HAL_Delay(1000);
+  LCD_String("DANG KY VAN TAY ");
+
+  HAL_Delay(1000);
   FingerResult=RegistryNewFinger(CurrentNumberFinger+1);
 	if(FingerResult==FP_OK)
 	{
 		LCD_SetPos(0,1);
-	  LCD_String("DANG KY T.CONG  ");
+		LCD_String("DANG KY T.CONG  ");
 		HAL_Delay(1000);
 		LCD_SetPos(0,1);
 		LCD_String("                ");
@@ -374,10 +371,10 @@ uint8_t ProcessRegistryNewFinger()
 		HAL_Delay(1000);
 		LCD_SetPos(0,1);
 		LCD_String("                ");
-		
+
 	}
 	return FingerResult;
-		
+
 }
 
 void DeleteAllFinger()
@@ -404,7 +401,7 @@ void DeleteAllFinger()
 		LCD_SetPos(0,1);
 		LCD_String("                ");
 	}
-			
+
 }
 
 
@@ -428,7 +425,7 @@ void CloseDoor()
 
 void OpenDoor()
 {
-		HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_SET);
 	  Delay_us(2100);
 	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_RESET);
 }
@@ -441,9 +438,10 @@ void OpenDoor()
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
   uint8_t FingerResult;
-	 uint32_t TimeCount;
+  uint32_t TimeCount;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -468,26 +466,26 @@ int main(void)
   MX_USART2_UART_Init();
   MX_UART5_Init();
   /* USER CODE BEGIN 2 */
-   LCD_Init();
-	 LCD_SetPos(0,0);
-	 LCD_String("  HT VAN TAY");
-	 
-	 
-	 HAL_Delay(1000);
+  LCD_Init();
+  LCD_SetPos(0,0);
+  LCD_String("  HT VAN TAY");
 
-		OpenDoor(); // need to active motor
-		HAL_Delay(500);
-		CloseDoor();
-		HAL_Delay(500);
-		OpenDoor();
-		HAL_Delay(500);
-		CloseDoor();
-		CurrentNumberFinger=GetNumberOfFinger();
-		if(CurrentNumberFinger>100) 
-		{
-			CurrentNumberFinger=1;
-		}
-	 
+
+  HAL_Delay(1000);
+
+  OpenDoor(); // need to active motor
+  HAL_Delay(500);
+  CloseDoor();
+  HAL_Delay(500);
+  OpenDoor();
+  HAL_Delay(500);
+  CloseDoor();
+  CurrentNumberFinger=GetNumberOfFinger();
+  if(CurrentNumberFinger>100)
+  {
+	CurrentNumberFinger=1;
+  }
+
 	 LCD_SetPos(0,1);
 	 LCD_String("   SANG SANG    ");
   /* USER CODE END 2 */
@@ -496,47 +494,45 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		
-		FingerResult=CheckFinger();
-	  if(FingerResult==FP_OK)
-		{
-			
-			OpenDoor();
-			LCD_SetPos(0,1);
-	    LCD_String("   DANG MO CUA ");
 
-			HAL_Delay(3000);
-			CloseDoor();
-			LCD_SetPos(0,1);
-			LCD_String("               ");
-		}
-		else if(FingerResult==FP_FINGER_NOTFOUND)
-		{
-			LCD_SetPos(0,1);
-	    LCD_String("VT KHONG HOP LE");
-			HAL_Delay(1000);
-			LCD_SetPos(0,1);
-			LCD_String("               ");
-		}
-		
-		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1)
-		{
-			TimeCount = HAL_GetTick();
-			while(HAL_GetTick()-TimeCount<3000&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // check hold button in 3 second to erase
-			{
+	FingerResult=CheckFinger();
+    if(FingerResult==FP_OK)
+	{
 
-			}
-			if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // still hold button
-			{
-				DeleteAllFinger();
-			}
-			else
-		  {
-				FingerResult=ProcessRegistryNewFinger();
-			}
-			
+		OpenDoor();
+		LCD_SetPos(0,1);
+		LCD_String("   DANG MO CUA ");
+
+		HAL_Delay(3000);
+		CloseDoor();
+		LCD_SetPos(0,1);
+		LCD_String("               ");
+	}
+	else if(FingerResult==FP_FINGER_NOTFOUND)
+	{
+		LCD_SetPos(0,1);
+		LCD_String("VT KHONG HOP LE");
+		HAL_Delay(1000);
+		LCD_SetPos(0,1);
+		LCD_String("               ");
+	}
+
+	if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1)
+	{
+		TimeCount = HAL_GetTick();
+		while(HAL_GetTick()-TimeCount<3000&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // check hold button in 3 second to erase
+		{}
+		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // still hold button
+		{
+			DeleteAllFinger();
 		}
-		HAL_Delay(100);
+		else
+		{
+			FingerResult=ProcessRegistryNewFinger();
+		}
+
+	}
+	HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
