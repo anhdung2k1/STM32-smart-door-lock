@@ -41,11 +41,11 @@
  #define FP_FINGER_NOTFOUND 0x09
 
 // Định nghĩa chân kết nối ESP32
-//#define ESP32_TX_PIN GPIO_PIN_10
-//#define ESP32_TX_PORT GPIOB
-//
-//#define ESP32_RX_PIN GPIO_PIN_11
-//#define ESP32_RX_PORT GPIOB
+#define ESP32_TX_PIN GPIO_PIN_10
+#define ESP32_TX_PORT GPIOB
+
+#define ESP32_RX_PIN GPIO_PIN_11
+#define ESP32_RX_PORT GPIOB
 
 
 /* USER CODE END PD */
