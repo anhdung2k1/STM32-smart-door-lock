@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2023 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -21,9 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include <string.h>
+#include "stdlib.h"
 #include "lcd.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,6 +39,15 @@
  #define FP_FINGER_NOTMATCH 0x0A
  #define FP_FINGER_NOTMATCH 0x0A
  #define FP_FINGER_NOTFOUND 0x09
+
+// Định nghĩa chân kết nối ESP32
+#define ESP32_TX_PIN GPIO_PIN_10
+#define ESP32_TX_PORT GPIOB
+
+#define ESP32_RX_PIN GPIO_PIN_11
+#define ESP32_RX_PORT GPIOB
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,11 +56,10 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim3;
-
 UART_HandleTypeDef huart5;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart3; // UART cho ESP32
 
 /* USER CODE BEGIN PV */
 uint8_t FPHeader[6]={0xEF,0x01,0xFF,0xFF,0xFF,0xFF};
@@ -71,16 +79,15 @@ uint8_t CurrentNumberFinger;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_USART2_UART_Init(void);
 static void MX_UART5_Init(void);
-static void MX_TIM3_Init(void);
+static void MX_USART2_UART_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 void SendFPHeader()
 {
 	HAL_UART_Transmit(&huart5,FPHeader,6,1000);
@@ -140,7 +147,7 @@ void SendStoreFinger(uint16_t IDStore)
 	Sum=Sum+DataSend[5];
 	DataSend[6]=(uint8_t) (IDStore&0xFF);
 	Sum=Sum+DataSend[6];
-  DataSend[7]=(uint8_t)(Sum>> 8);
+	DataSend[7]=(uint8_t)(Sum>> 8);
 	DataSend[8]=(uint8_t)(Sum&0xFF);
 	HAL_UART_Transmit(&huart5,DataSend,9,1000);
 }
@@ -308,8 +315,6 @@ uint8_t CheckFinger()
 
 
 
-
-
 	while(Result==FP_NOFINGER&&(HAL_GetTick() - TimeOut < 5000)&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==0) // time out is 5000 ms and no button press
 	{
 
@@ -329,7 +334,7 @@ uint8_t CheckFinger()
 	Result=CheckFPRespsone(12);
 	if(Result!=FP_OK) return FP_ERROR;
 
-	// Search Finger
+	// Search Fingger
 	SendFPHeader();
 	SendFPDSearchFinger();
 	Result=CheckFPRespsone(16);
@@ -418,29 +423,47 @@ void Delay_us(uint32_t TimeDelay)
 	}
 }
 
-void SetServoAngle(uint8_t angle)
-{
-	if (angle > 180) angle = 180;
-	uint32_t pulse_length = ((angle * (2000 - 1000)) / 180) + 1000;
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pulse_length);
-}
-
 void CloseDoor()
 {
-//	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_SET);
-//	  Delay_us(1000);
-//	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_RESET);
-	SetServoAngle(0); // Close door (0 degrees)
+	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_SET);
+	  Delay_us(1000);
+	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_RESET);
 }
 
 void OpenDoor()
 {
-//	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_SET);
-//	  Delay_us(2100);
-//	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_RESET);
-	SetServoAngle(90); // Open door (90 degrees)
-	Delay_us(2100);
+	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_SET);
+	  Delay_us(2100);
+	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_11,GPIO_PIN_RESET);
 }
+
+void DisplayMessage(char *message)
+{
+    // Hiển thị thông điệp trên LCD
+    LCD_SetPos(0, 1);
+    LCD_String(message);
+    HAL_Delay(2000);
+}
+
+void SendDataToCloud(char *data)
+{
+    if (HAL_UART_Transmit(&huart3, (uint8_t *)data, strlen(data), 1000) != HAL_OK)
+    {
+        DisplayMessage("Data Error");
+    }
+    // Thêm thời gian trễ nếu cần
+    HAL_Delay(100);  // Thời gian trễ 100ms
+}
+
+uint8_t ReceiveDataFromESP32(uint8_t *buffer, uint16_t size)
+{
+    if (HAL_UART_Receive(&huart3, buffer, size, 1000) == HAL_OK)
+    {
+        return 1; // Nhận dữ liệu thành công
+    }
+    return 0; // Nhận dữ liệu thất bại
+}
+
 
 /* USER CODE END 0 */
 
@@ -452,8 +475,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  uint8_t FingerResult;
-  uint32_t TimeCount;
+	  uint8_t FingerResult;
+	  uint32_t TimeCount;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -475,78 +498,79 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
   MX_UART5_Init();
-  MX_TIM3_Init();
+  MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   LCD_Init();
   LCD_SetPos(0,0);
   LCD_String("  HT VAN TAY");
 
-
   HAL_Delay(1000);
-
   OpenDoor(); // need to active motor
-  HAL_Delay(500);
-  CloseDoor();
-  HAL_Delay(500);
-  OpenDoor();
-  HAL_Delay(500);
-  CloseDoor();
-  CurrentNumberFinger=GetNumberOfFinger();
-  if(CurrentNumberFinger>100)
-  {
-	CurrentNumberFinger=1;
-  }
+    HAL_Delay(500);
+    CloseDoor();
+    HAL_Delay(500);
+    OpenDoor();
+    HAL_Delay(500);
+    CloseDoor();
+    CurrentNumberFinger=GetNumberOfFinger();
+    if(CurrentNumberFinger>100)
+    {
+  	CurrentNumberFinger=1;
+    }
 
-	 LCD_SetPos(0,1);
-	 LCD_String("   SANG SANG    ");
+  	 LCD_SetPos(0,1);
+  	 LCD_String("   SANG SANG    ");
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	FingerResult=CheckFinger();
-    if(FingerResult==FP_OK)
-	{
-		OpenDoor();
-		LCD_SetPos(0,1);
-		LCD_String("   DANG MO CUA ");
-
-		HAL_Delay(3000);
-		CloseDoor();
-		LCD_SetPos(0,1);
-		LCD_String("               ");
-	}
-	else if(FingerResult==FP_FINGER_NOTFOUND)
-	{
-		LCD_SetPos(0,1);
-		LCD_String("VT KHONG HOP LE");
-		HAL_Delay(1000);
-		LCD_SetPos(0,1);
-		LCD_String("               ");
-	}
-
-	if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1)
-	{
-		TimeCount = HAL_GetTick();
-		while(HAL_GetTick()-TimeCount<3000&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // check hold button in 3 second to erase
-		{}
-		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // still hold button
-		{
-			DeleteAllFinger();
-		}
-		else
-		{
-			FingerResult=ProcessRegistryNewFinger();
-		}
-
-	}
-	HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  FingerResult=CheckFinger();
+	      if(FingerResult==FP_OK)
+	  	{
+
+	  		OpenDoor();
+	  		LCD_SetPos(0,1);
+	  		LCD_String("   DANG MO CUA ");
+
+	  		HAL_Delay(3000);
+	  		CloseDoor();
+	  		LCD_SetPos(0,1);
+	  		LCD_String("               ");
+	  	}
+	  	else if(FingerResult==FP_FINGER_NOTFOUND)
+	  	{
+	  		LCD_SetPos(0,1);
+	  		LCD_String("VT KHONG HOP LE");
+	  		HAL_Delay(1000);
+	  		LCD_SetPos(0,1);
+	  		LCD_String("               ");
+	  	}
+
+	  	if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1)
+	  	{
+	  		TimeCount = HAL_GetTick();
+	  		while(HAL_GetTick()-TimeCount<3000&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // check hold button in 3 second to erase
+	  		{}
+	  		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1) // still hold button
+	  		{
+	  			DeleteAllFinger();
+	  		}
+	  		else
+	  		{
+	  			FingerResult=ProcessRegistryNewFinger();
+	  		}
+
+	  	}
+	  	HAL_Delay(100);
+
+
   }
   /* USER CODE END 3 */
 }
@@ -568,8 +592,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -580,7 +605,7 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
@@ -589,55 +614,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief TIM3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM3_Init(void)
-{
-
-  /* USER CODE BEGIN TIM3_Init 0 */
-
-  /* USER CODE END TIM3_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM3_Init 1 */
-
-  /* USER CODE END TIM3_Init 1 */
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 84-1;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 20000-1;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 1500;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM3_Init 2 */
-
-  /* USER CODE END TIM3_Init 2 */
-  HAL_TIM_MspPostInit(&htim3);
-
 }
 
 /**
@@ -740,6 +716,39 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -758,11 +767,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14
@@ -770,21 +778,25 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA0 PA1 PA4 PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : PA0 PA4 PA5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB10 PB11 PB12 PB13
-                           PB14 PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15;
+  /*Configure GPIO pin : PA1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB12 PB13 PB14 PB15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
