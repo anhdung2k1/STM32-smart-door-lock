@@ -58,34 +58,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := STM32-fingure-print
+BUILD_ARTIFACT_NAME := MainCode
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-STM32-fingure-print.elf \
+MainCode.elf \
 
 MAP_FILES += \
-STM32-fingure-print.map \
+MainCode.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-STM32-fingure-print.list \
+MainCode.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: STM32-fingure-print.elf secondary-outputs
+main-build: MainCode.elf secondary-outputs
 
 # Tool invocations
-STM32-fingure-print.elf STM32-fingure-print.map: $(OBJS) $(USER_OBJS) D:\code\STM32-fingure-print\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "STM32-fingure-print.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\code\STM32-fingure-print\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32-fingure-print.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+MainCode.elf MainCode.map: $(OBJS) $(USER_OBJS) C:\Users\ACER\STM32-smart-door-lock\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "MainCode.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\ACER\STM32-smart-door-lock\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="MainCode.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -94,14 +94,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-STM32-fingure-print.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "STM32-fingure-print.list"
+MainCode.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "MainCode.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) STM32-fingure-print.elf STM32-fingure-print.list STM32-fingure-print.map default.size.stdout
+	-$(RM) MainCode.elf MainCode.list MainCode.map default.size.stdout
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
