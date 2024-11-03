@@ -31,25 +31,53 @@ void setup() {
     }
 }
 
+// void loop() {
+//     // Gửi dữ liệu nếu có
+//     String fingerprintData = "Fingerprint Detected"; 
+//     String status = "success"; 
+
+//     if (sendDataToRecords(fingerprintData, status)) {
+//         Serial.println("Data sent to records successfully");
+//     } else {
+//         Serial.println("Failed to send data to records");
+//     }
+
+//     if (sendDataToNotifications(fingerprintData, status)) {
+//         Serial.println("Data sent to notifications successfully");
+//     } else {
+//         Serial.println("Failed to send data to notifications");
+//     }
+
+//     delay(10000); 
+// }
+
 void loop() {
-    // Gửi dữ liệu nếu có
-    String fingerprintData = "Fingerprint Detected"; 
-    String status = "success"; 
+    if (Serial.available()) {
+        char receivedChar = Serial.read();  
+        
+        if (receivedChar == '1') {
+            String fingerprintData = "Fingerprint Detected"; 
+            String status = "success"; 
 
-    if (sendDataToRecords(fingerprintData, status)) {
-        Serial.println("Data sent to records successfully");
-    } else {
-        Serial.println("Failed to send data to records");
+            if (sendDataToRecords(fingerprintData, status)) {
+                Serial.println("Data sent to records successfully");
+            } else {
+                Serial.println("Failed to send data to records");
+            }
+
+            if (sendDataToNotifications(fingerprintData, status)) {
+                Serial.println("Data sent to notifications successfully");
+            } else {
+                Serial.println("Failed to send data to notifications");
+            }
+        } else {
+            Serial.println("Received character is not '1', data not sent.");
+        }
     }
 
-    if (sendDataToNotifications(fingerprintData, status)) {
-        Serial.println("Data sent to notifications successfully");
-    } else {
-        Serial.println("Failed to send data to notifications");
-    }
-
-    delay(10000); 
+    delay(100);  
 }
+
 
 bool login() {
     HTTPClient http;
