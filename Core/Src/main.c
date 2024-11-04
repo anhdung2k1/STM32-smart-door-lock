@@ -496,7 +496,7 @@ int main(void)
   MFRC522_Init();
   LCD_Init();
   LCD_SetPos(0,0);
-  LCD_String("  HT VAN TAY");
+  LCD_String(" HT VAN TAY/RFID");
 
 
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
@@ -519,7 +519,7 @@ int main(void)
   }
 
 	 LCD_SetPos(0,1);
-	 LCD_String("   SANG SANG    ");
+	 LCD_String("    SAN SANG    ");
   /* USER CODE END 2 */
 
   /* Infinite loop */
