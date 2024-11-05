@@ -2,6 +2,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
+#include <SPIFFS.h>
 
 struct Config {
     const char* ssid;
@@ -23,95 +24,18 @@ String apiNotificationsUrl = String(CONFIG.apiBaseUrl) + "/notifications";
 
 String token = "";
 unsigned long lastTokenRefresh = 0;
-const unsigned long TOKEN_REFRESH_INTERVAL = 3600000; 
- 
-const char* ca_cert = R"(
------BEGIN CERTIFICATE-----
-MIIDeTCCAmGgAwIBAgIUGxif8wd3NxzQXuJzzPHJRVfDZwAwDQYJKoZIhvcNAQEL
-BQAwTDELMAkGA1UEBhMCVk4xCzAJBgNVBAgMAlZOMRIwEAYDVQQHDAlIb0NoaU1p
-bmgxDTALBgNVBAoMBEFnaXMxDTALBgNVBAMMBEFnaXMwHhcNMjQxMTA0MTY0MTE2
-WhcNMzQxMTAyMTY0MTE2WjBMMQswCQYDVQQGEwJWTjELMAkGA1UECAwCVk4xEjAQ
-BgNVBAcMCUhvQ2hpTWluaDENMAsGA1UECgwEQWdpczENMAsGA1UEAwwEQWdpczCC
-ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMdEAnOLtfsFDHipIDvrR0xs
-FhfRee0LgpW1odNPLSKVt2GYF/LSM+AkBgLUs3z8cTCSaTBle+HDyDJjH6PG52JT
-OUnjYAiitFpOMn5T8GUuH94TkkC/i053AZeLXDonGRKbJKBZI3wzZZNLTPsAios5
-R+nXQaC97V3IKql/EgUu7gTx/mM9SHLj/+5ekkRqzGJhUF9p+f22VKU1JEdOP23x
-8piKKej6oD4cmaml+WHVy4gJdAYtWRVT2hyskmjF215Z8ZPMD1urd66W0zTeEEsh
-wTRKg3hFPRulOV5Bd2YiabcKGwFqPn5N+kmUzaqPOqc5SsmlS2ArLmvvD4+d1JEC
-AwEAAaNTMFEwHQYDVR0OBBYEFH+kzV3v61yCES4rKICMCrO09P8JMB8GA1UdIwQY
-MBaAFH+kzV3v61yCES4rKICMCrO09P8JMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZI
-hvcNAQELBQADggEBABGOYiVDdSsVdUOoShlLFmT19VAYWvxtcHmxqpFAg1ukaIbJ
-pYbKFHnyzchyJ4wJoJsCLtF5ZVO3b6ctAx6aIpnf2Qlwek+b+UOWZO0ul2i5cB0e
-7vRn5ReQAdi6riQqDjmRCytzpwB+AhLS/NAOwZghqna6pKLKolXwWI46fFRHXTy8
-950OG9A/T3voIGeFIFx47SEjOdvW1InA3Jcuojj9YQbRZ9Uf4Nvln+uBhjWmPPfb
-DeW4+4qTRjOypO8Lpu8hPqgYJ4bvVGgOZfcuQZ5ta/P2xODoKuiePh3lnQpCxDJc
-2T51HhO4X3Zx/T6uRMheCINLpW8M6oFCW3mjc8A=
------END CERTIFICATE-----
-)";  
-
-
-const char* client_cert = R"(
------BEGIN CERTIFICATE-----
-MIIDwDCCAqigAwIBAgIUYGrf4fmwR/UgYDkHFnN2fNEWNKAwDQYJKoZIhvcNAQEL
-BQAwTDELMAkGA1UEBhMCVk4xCzAJBgNVBAgMAlZOMRIwEAYDVQQHDAlIb0NoaU1p
-bmgxDTALBgNVBAoMBEFnaXMxDTALBgNVBAMMBEFnaXMwHhcNMjQxMTA0MTY0MTE3
-WhcNMzQxMTAyMTY0MTE3WjBlMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZv
-cm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzESMBAGA1UECgwJTXlDb21wYW55
-MRUwEwYDVQQDDAwzNC4xMzkuMTMuMzcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
-ggEKAoIBAQDDQrfnu8PXB+0p752DKDFp8x1kVBlbWWMTWw+9jezHNlpcj8ZmzOJ5
-BfQn/Q9yvFiTOV7r1ZE6olUuef2cQtLE/7RbO7Fr9LJj9a5xx9HTfANnMA2TM9nh
-xRhWiMbck3kVLbrqQ5qrErm2+uRtaFXCuLng98sF5bHPio7mZlLRr6frESohThrt
-IQeyo1iv3VxXxBGSE+wOrOpafNA6xbvY+fiKcHLvqcOb2BkIT54+bAzhcejd98VU
-HWTteyrXFxc+9BFA3kd2W34Wv1lGtCY2d2NLUqcCUs4KwifGaChtIecuRIfc7wN1
-Z56nYafpaeIqqcHBCKCMKZpaBaUrzsN1AgMBAAGjgYAwfjAfBgNVHSMEGDAWgBR/
-pM1d7+tcghEuKyiAjAqztPT/CTAJBgNVHRMEAjAAMAsGA1UdDwQEAwIE8DATBgNV
-HSUEDDAKBggrBgEFBQcDATAPBgNVHREECDAGhwQiiw0lMB0GA1UdDgQWBBQmxLG/
-yJ425YVYq/9Q8dhKIKLHFTANBgkqhkiG9w0BAQsFAAOCAQEAGrVPS/TopVDtQw7J
-i00f2abIFj/aCr2P/K84+siXPYPci5bZ+G0lhgWggZVydVJ/LHs7n1uYkbh/ThjX
-8eHfcjJTwe85xAD1pHDOje7MErMbtgQ+o+8ODFsTSN3MEL352FJeqyZkUuoTz9c4
-XBd86Nb1nodApLEnb/WEpC97HC09glQ1umguQBMf/B6thcvxRXLTxsOqk8jrycyT
-UzFulO95k8bUgSHtUZc7iHbWRvOW1O3n0IZycpVRuj6XtFgqZhSbu50Ap1h0vFyR
-MGF6PaUpm5W8EJ5ehYBwJDLLBIiqPseYAHiSr25NWNzz4+F0sToD1TcM+ruD7cNs
-bywAiA==
------END CERTIFICATE-----
-)";
-
-const char* client_key = R"(
------BEGIN PRIVATE KEY-----
-MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDDQrfnu8PXB+0p
-752DKDFp8x1kVBlbWWMTWw+9jezHNlpcj8ZmzOJ5BfQn/Q9yvFiTOV7r1ZE6olUu
-ef2cQtLE/7RbO7Fr9LJj9a5xx9HTfANnMA2TM9nhxRhWiMbck3kVLbrqQ5qrErm2
-+uRtaFXCuLng98sF5bHPio7mZlLRr6frESohThrtIQeyo1iv3VxXxBGSE+wOrOpa
-fNA6xbvY+fiKcHLvqcOb2BkIT54+bAzhcejd98VUHWTteyrXFxc+9BFA3kd2W34W
-v1lGtCY2d2NLUqcCUs4KwifGaChtIecuRIfc7wN1Z56nYafpaeIqqcHBCKCMKZpa
-BaUrzsN1AgMBAAECggEAUqkL8a4rWfyhCf/GTp/VS2UALFjt4x4UMz15jGVot2zr
-FARJmXti5JkAo20d/RR+6tR+upfOw2O1a9d45Y3kbEFTuMuscGdGncqD7ucIjN8T
-EbvmA0sQEeO+SePdS8OinrSdTE8SSxnCRRQxX5+rrqNFDVfZOsXiYFnn5OGsbdeR
-SSbx1vDuAZanlNIUFul7YcksB0Jo2Vy9RMeWjT9HYQU8HpKnlLCTs9zU9J6xOUVD
-BmHYcRuQGmDssG8S0Q0bBt24XxAYgIw5pmyPoXAdHtS/oylxGu9ljZZmx53dpdAq
-PkQXQQjj+4c+MgxacCmYfWKfoGAHxrcKkg5I/KyIgQKBgQDsMp3iNCx5auByZ4Vt
-El6Rlm6aftT4QyWAWx1uF62EUttugsCTP+a4kIJ3aRFEi3901wHyUUljlP1ZBvOS
-vsvLYVO6DN1VNjSz+7J0ODp/3UCSEtF9JOB/Gv/6yUBxmQl85CFlmHseGCS6Rl+c
-dfpuI8xE01660dWvJj9CaIODPwKBgQDToX2pYp+qfce7kqGHb3SVgKChvOS++wQa
-2dQO+UKLrGNdHRsAGT76w25aTPoWvx47zwr9waU3nZo5Nkq9AKxUPorK+qSasmC3
-VN2+PzKAtg9D3EvT5phk0H9BrRgEJ9Mscd3XhDrcwrsgFelsCWVVjKsGM6VkodTK
-7wrvNfSwSwKBgC80po1Q9BqIG7eBrQ7xfukF8bD67EF52gLfMvCP1uP9U1Gw3CAR
-w2DbsNeArizO3HhTiFYPnOVEH6YtV3zamQxatUsXyxx+quXVxgKoQjjP1VncXPXv
-6tY8ZTCQDEsn1NebGHmfkeuf06dO7Ujt41Ej4m1W+TXJPjW1JSt2i+ItAoGAfppv
-eHOdnPreD+Jqa4FLt1xZvCgql+3GyOFjMQoAu1oHn16YFnkD6jQbwj2mpxDyX0k/
-BAticWEBMBTApUzPyx4XHdLPwhPQNBy7AuL/rWw8uZYCbuPWawkn9/w7D9FbTY1Y
-72MVa5e7Jji1iYIdcw5SCcW/vfHqQPS8D9qxZP0CgYBzsT2MtydVG8s46b2ZGtTz
-0rjeYePMJyMegmomRUMqfeiB0lusN7lvWjNPnYg6VCwog/Dd6surhSwjt19WqCgz
-G2BQld/qOhkmahet6l0zBYbeUGrzkeeS+kuuC+jYKnuq2t7wtbrIW9ywtSxHgAe5
-+S0zzAPayfrfC4u+1KARGA==
------END PRIVATE KEY-----
-)";
+const unsigned long TOKEN_REFRESH_INTERVAL = 3600000;  
 
 WiFiClientSecure client;
 HTTPClient https;
 
 void setup() {
     Serial.begin(115200);
+
+    if (!SPIFFS.begin(true)) {
+        Serial.println("An error has occurred while mounting SPIFFS.");
+        return;
+    }
 
     unsigned long startAttemptTime = millis();
     WiFi.begin(CONFIG.ssid, CONFIG.password);
@@ -131,10 +55,11 @@ void setup() {
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
 
-
-    client.setCACert(ca_cert);  
-    client.setCertificate(client_cert); 
-    client.setPrivateKey(client_key);  
+    // Nạp chứng chỉ và khóa từ SPIFFS
+    if (!loadCertificates()) {
+        Serial.println("Failed to load certificates from SPIFFS.");
+        return;
+    }
 
     int loginAttempts = 0;
     const int maxAttempts = 3;
@@ -195,6 +120,37 @@ void loop() {
     delay(100);
 }
 
+bool loadCertificates() {
+    File caFile = SPIFFS.open("/ca.crt", "r");  
+    if (!caFile) {
+        Serial.println("Failed to open CA certificate file");
+        return false;
+    }
+    String caCert = caFile.readString();
+    client.setCACert(caCert.c_str());
+    caFile.close();
+
+    File clientCertFile = SPIFFS.open("/tls.crt", "r");  
+    if (!clientCertFile) {
+        Serial.println("Failed to open client certificate file");
+        return false;
+    }
+    String clientCert = clientCertFile.readString();
+    client.setCertificate(clientCert.c_str());
+    clientCertFile.close();
+
+    File clientKeyFile = SPIFFS.open("/tls.key", "r"); 
+    if (!clientKeyFile) {
+        Serial.println("Failed to open client key file");
+        return false;
+    }
+    String clientKey = clientKeyFile.readString();
+    client.setPrivateKey(clientKey.c_str());
+    clientKeyFile.close();
+
+    return true;
+}
+
 bool sendHttpRequest(const String& url, const String& data, const String& status, const char* dataField) {
     const int MAX_RETRIES = 3;
     int retryCount = 0;
@@ -205,9 +161,9 @@ bool sendHttpRequest(const String& url, const String& data, const String& status
         https.addHeader("Authorization", "Bearer " + token);
         https.addHeader("Content-Type", "application/json");
 
-        
         String sanitizedData = data;
         sanitizedData.replace("\"", "\\\"");
+
         String sanitizedStatus = status;
         sanitizedStatus.replace("\"", "\\\"");
 
